@@ -1,6 +1,6 @@
 profiles:
   m5stack_stamp_c3:
-    fqbn: m5stack:esp32:m5stack_stamp_c3
+    fqbn: m5stack:esp32:m5stack_stamp_c3:CDCOnBoot=default
     platforms:
       - platform: m5stack:esp32 (2.1.2)
         platform_index_url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json

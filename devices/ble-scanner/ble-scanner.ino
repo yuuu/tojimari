@@ -9,25 +9,15 @@
 int scanTime = 5;  //In seconds
 BLEScan *pBLEScan;
 
-void notify(int status);
-
-class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
-  void onResult(BLEAdvertisedDevice advertisedDevice) {
-    if (advertisedDevice.getName() == "tojimari") {
-      Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
-      std::string manufactureData = advertisedDevice.getManufacturerData();
-      int status = (int)manufactureData[3];
-      Serial.println(status == 0 ? "Close" : "Open");
-      notify(status);
-    }
-  }
-};
-
-void notify(int status)
+void notify(const char* status, const char* name)
 {
   WiFiClient client;
+  char json[256] = {0};
   uint8_t buffer[256] = {0};
   size_t bytesToRead = 0;
+
+  sprintf(json, "{\"status\": %s, \"name\": %s}", status, name);
+  Serial.println(json);
 
   if(!client.connected()) {
     Serial.println("Connecting...");
@@ -38,7 +28,7 @@ void notify(int status)
   }
 
   Serial.println("Sending...");
-  client.write((char*)&status, sizeof(status));
+  client.write(json, strnlen((char*)json, sizeof(json)) + 1);
   Serial.println("Sended.");
 
   while((bytesToRead = client.available()) > 0) {
@@ -47,6 +37,18 @@ void notify(int status)
     Serial.write(buffer, bytesRead);
   }
 }
+
+class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
+  void onResult(BLEAdvertisedDevice advertisedDevice) {
+    if (advertisedDevice.getName() == "tojimari") {
+      Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+      std::string manufactureData = advertisedDevice.getManufacturerData();
+      int status = (int)manufactureData[3];
+      Serial.printf("Status: %s\n", status == 0 ? "close" : "open");
+      notify(status == 0 ? "close" : "open", advertisedDevice.getName().c_str());
+    }
+  }
+};
 
 void setup() {
   Serial.begin(115200);
