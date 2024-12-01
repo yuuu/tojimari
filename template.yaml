@@ -26,6 +26,54 @@ Resources:
           Properties:
             Path: /tojimari
             Method: get
+  TojimariTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tojimari
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: 'name'
+          KeyType: 'HASH'
+      BillingMode: PAY_PER_REQUEST
+  TojimariIoTDynamoDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: IoTDynamoDBRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iot.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: TojimariIoTDynamoDBAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt TojimariTable.Arn
+  TojimariTopicRile:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: 'TojimariTopicRule'
+      TopicRulePayload:
+        Sql: SELECT name, status FROM 'tojimari'
+        Actions:
+          - DynamoDBv2:
+              RoleArn: !GetAtt TojimariIoTDynamoDBRole.Arn
+              PutItem:
+                TableName: !Ref TojimariTable
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

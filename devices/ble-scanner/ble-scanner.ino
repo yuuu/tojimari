@@ -16,14 +16,14 @@ void notify(const char* status, const char* name)
   uint8_t buffer[256] = {0};
   size_t bytesToRead = 0;
 
-  sprintf(json, "{\"status\": %s, \"name\": %s}", status, name);
+  sprintf(json, "{\"status\": \"%s\", \"name\": \"%s\"}", status, name);
   Serial.println(json);
 
-  if(!client.connected()) {
+  while(!client.connected()) {
     Serial.println("Connecting...");
     if(!client.connect("unified.soracom.io", 23080)) {
       Serial.println("Failed to connect...");
-      return;
+      delay(5000);
     }
   }
 
@@ -62,11 +62,11 @@ void setup() {
   delay(1000);
 
   BLEDevice::init("");
-  pBLEScan = BLEDevice::getScan();  //create new scan
+  pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-  pBLEScan->setActiveScan(true);  //active scan uses more power, but get results faster
+  pBLEScan->setActiveScan(true);
   pBLEScan->setInterval(1000);
-  pBLEScan->setWindow(500);  // less or equal setInterval value
+  pBLEScan->setWindow(500);
 }
 
 void loop() {
@@ -75,6 +75,6 @@ void loop() {
   Serial.print("Devices found: ");
   Serial.println(foundDevices.getCount());
   Serial.println("Scan done!");
-  pBLEScan->clearResults();  // delete results fromBLEScan buffer to release memory
+  pBLEScan->clearResults();
   delay(2000);
 }
