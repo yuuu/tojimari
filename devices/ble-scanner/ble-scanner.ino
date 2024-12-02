@@ -19,16 +19,16 @@ void notify(const char* status, const char* name)
   sprintf(json, "{\"status\": \"%s\", \"name\": \"%s\"}", status, name);
   Serial.println(json);
 
-  while(!client.connected()) {
+  if(!client.connected()) {
     Serial.println("Connecting...");
     if(!client.connect("unified.soracom.io", 23080)) {
       Serial.println("Failed to connect...");
-      delay(5000);
+      return;
     }
   }
 
   Serial.println("Sending...");
-  client.write(json, strnlen((char*)json, sizeof(json)) + 1);
+  client.write(json, strnlen((char*)json, sizeof(json)));
   Serial.println("Sended.");
 
   while((bytesToRead = client.available()) > 0) {
