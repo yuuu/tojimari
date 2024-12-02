@@ -4,7 +4,7 @@
 #include <M5StampC3LED.h>
 
 #define SENSOR 8
-#define CYCLE (5 * 1000000LL)
+#define CYCLE (10 * 1000000LL)
 
 M5StampC3LED led = M5StampC3LED();
 RTC_DATA_ATTR static uint8_t seq;

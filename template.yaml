@@ -11,6 +11,11 @@ Globals:
     Timeout: 3
     MemorySize: 512
 
+Parameters:
+  SlackSigningSecret:
+    Type: String
+    Description: Slack Signing Secret
+
 Resources:
   TojimariFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -18,14 +23,21 @@ Resources:
       CodeUri: tojimari/
       Handler: app.lambda_handler
       Runtime: ruby3.3
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TojimariTable
       Architectures:
         - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TojimariTable
+          SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
       Events:
         Tojimari:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /tojimari
-            Method: get
+            Method: post
   TojimariTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -81,7 +93,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   TojimariApi:
     Description: "API Gateway endpoint URL for Prod stage for Tojimari function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/tojimari/"
   TojimariFunction:
     Description: "Tojimari Lambda Function ARN"
     Value: !GetAtt TojimariFunction.Arn

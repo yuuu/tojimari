@@ -1,38 +1,44 @@
-# require 'httparty'
+require 'uri'
 require 'json'
+require 'logger'
+require 'slack-ruby-client'
+require 'rack'
+require 'aws-sdk-dynamodb'
+
+def logger
+  @logger ||= Logger.new($stdout, level: Logger::Severity::DEBUG)
+end
+
+def verify_request(event)
+  env = {
+    'rack.input' => StringIO.new(event['body']),
+    'HTTP_X_SLACK_REQUEST_TIMESTAMP' => event.dig('headers', 'X-Slack-Request-Timestamp'),
+    'HTTP_X_SLACK_SIGNATURE' => event.dig('headers', 'X-Slack-Signature')
+  }
+  req = Rack::Request.new(env)
+  slack_request = Slack::Events::Request.new(req)
+  slack_request.verify!
+end
+
+def all_closed?
+  client = Aws::DynamoDB::Client.new
+  resp = client.scan(table_name: ENV.fetch('TABLE_NAME'))
+  logger.debug(resp)
+
+  resp.items.all? { |item| item['status'] == 'close' }
+end
 
 def lambda_handler(event:, context:)
-  # Sample pure Lambda function
+  logger.debug(event)
+  logger.debug(context)
 
-  # Parameters
-  # ----------
-  # event: Hash, required
-  #     API Gateway Lambda Proxy Input Format
-  #     Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+  verify_request(event)
 
-  # context: object, required
-  #     Lambda Context runtime methods and attributes
-  #     Context doc: https://docs.aws.amazon.com/lambda/latest/dg/ruby-context.html
+  params = URI.decode_www_form(event['body']).to_h
+  logger.debug(params)
 
-  # Returns
-  # ------
-  # API Gateway Lambda Proxy Output Format: dict
-  #     'statusCode' and 'body' are required
-  #     # api-gateway-simple-proxy-for-lambda-output-format
-  #     Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-
-  # begin
-  #   response = HTTParty.get('http://checkip.amazonaws.com/')
-  # rescue HTTParty::Error => error
-  #   puts error.inspect
-  #   raise error
-  # end
-
-  {
-    statusCode: 200,
-    body: {
-      message: "Hello World!",
-      # location: response.body
-    }.to_json
-  }
+  { statusCode: 200, body: all_closed? ? '戸締まり完了！' : '開いている窓があります' }
+rescue StandardError => e
+  logger.fatal(e.full_message)
+  { statusCode: 200, body: e.message }
 end

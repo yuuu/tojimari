@@ -5,9 +5,11 @@
 #include "BLEScan.h"
 #include "BLEAdvertisedDevice.h"
 #include "net_config.h"
+#include <M5StampC3LED.h>
 
 int scanTime = 5;  //In seconds
 BLEScan *pBLEScan;
+M5StampC3LED led = M5StampC3LED();
 
 void notify(const char* status, const char* name)
 {
@@ -23,6 +25,7 @@ void notify(const char* status, const char* name)
     Serial.println("Connecting...");
     if(!client.connect("unified.soracom.io", 23080)) {
       Serial.println("Failed to connect...");
+      led.show(8, 0, 0);
       return;
     }
   }
@@ -30,6 +33,7 @@ void notify(const char* status, const char* name)
   Serial.println("Sending...");
   client.write(json, strnlen((char*)json, sizeof(json)));
   Serial.println("Sended.");
+  led.show(0, 8, 0);
 
   while((bytesToRead = client.available()) > 0) {
     bytesToRead = bytesToRead > sizeof(buffer) ? sizeof(buffer) : bytesToRead;
@@ -52,7 +56,6 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Scanning...");
 
   Params* params = 0;
   params = restoreParams();
@@ -65,8 +68,10 @@ void setup() {
   pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   pBLEScan->setActiveScan(true);
-  pBLEScan->setInterval(1000);
-  pBLEScan->setWindow(500);
+  pBLEScan->setInterval(scanTime * 1000);
+  pBLEScan->setWindow(scanTime * 1000);
+
+  led.show(8, 8, 8);
 }
 
 void loop() {
@@ -76,5 +81,4 @@ void loop() {
   Serial.println(foundDevices.getCount());
   Serial.println("Scan done!");
   pBLEScan->clearResults();
-  delay(2000);
 }
